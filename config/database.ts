@@ -1,7 +1,17 @@
 import path from "path";
 
-export default ({ env }) => {
-	const client = env("DATABASE_CLIENT", "mysql");
+type DatabaseClient = "mysql" | "postgres" | "sqlite";
+
+interface DatabaseConfig {
+	connection: {
+		client: string;
+		acquireConnectionTimeout: number;
+		[key: string]: any;
+	};
+}
+
+export default ({ env }: { env: any }): DatabaseConfig => {
+	const client = env("DATABASE_CLIENT", "mysql") as DatabaseClient;
 
 	const connections = {
 		mysql: {
@@ -11,17 +21,19 @@ export default ({ env }) => {
 				database: env("DATABASE_NAME"),
 				user: env("DATABASE_USERNAME"),
 				password: env("DATABASE_PASSWORD"),
-				ssl: env.bool("DATABASE_SSL", false) && {
-					key: env("DATABASE_SSL_KEY", undefined),
-					cert: env("DATABASE_SSL_CERT", undefined),
-					ca: env("DATABASE_SSL_CA", undefined),
-					capath: env("DATABASE_SSL_CAPATH", undefined),
-					cipher: env("DATABASE_SSL_CIPHER", undefined),
-					rejectUnauthorized: env.bool(
-						"DATABASE_SSL_REJECT_UNAUTHORIZED",
-						true
-					),
-				},
+				ssl: env.bool("DATABASE_SSL", false)
+					? {
+							key: env("DATABASE_SSL_KEY", undefined),
+							cert: env("DATABASE_SSL_CERT", undefined),
+							ca: env("DATABASE_SSL_CA", undefined),
+							capath: env("DATABASE_SSL_CAPATH", undefined),
+							cipher: env("DATABASE_SSL_CIPHER", undefined),
+							rejectUnauthorized: env.bool(
+								"DATABASE_SSL_REJECT_UNAUTHORIZED",
+								true
+							),
+						}
+					: false,
 			},
 			pool: {
 				min: env.int("DATABASE_POOL_MIN", 2),
@@ -36,17 +48,19 @@ export default ({ env }) => {
 				database: env("DATABASE_NAME", "strapi"),
 				user: env("DATABASE_USERNAME", "strapi"),
 				password: env("DATABASE_PASSWORD", "strapi"),
-				ssl: env.bool("DATABASE_SSL", false) && {
-					key: env("DATABASE_SSL_KEY", undefined),
-					cert: env("DATABASE_SSL_CERT", undefined),
-					ca: env("DATABASE_SSL_CA", undefined),
-					capath: env("DATABASE_SSL_CAPATH", undefined),
-					cipher: env("DATABASE_SSL_CIPHER", undefined),
-					rejectUnauthorized: env.bool(
-						"DATABASE_SSL_REJECT_UNAUTHORIZED",
-						true
-					),
-				},
+				ssl: env.bool("DATABASE_SSL", false)
+					? {
+							key: env("DATABASE_SSL_KEY", undefined),
+							cert: env("DATABASE_SSL_CERT", undefined),
+							ca: env("DATABASE_SSL_CA", undefined),
+							capath: env("DATABASE_SSL_CAPATH", undefined),
+							cipher: env("DATABASE_SSL_CIPHER", undefined),
+							rejectUnauthorized: env.bool(
+								"DATABASE_SSL_REJECT_UNAUTHORIZED",
+								true
+							),
+						}
+					: false,
 				schema: env("DATABASE_SCHEMA", "public"),
 			},
 			pool: {
@@ -67,6 +81,11 @@ export default ({ env }) => {
 		},
 	};
 
+	// Validar que el cliente existe
+	if (!connections[client]) {
+		throw new Error(`Unsupported database client: ${client}`);
+	}
+
 	return {
 		connection: {
 			client,
@@ -75,4 +94,3 @@ export default ({ env }) => {
 		},
 	};
 };
-
